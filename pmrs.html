@@ -1,0 +1,182 @@
+﻿<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الإغاثة الطبية الفلسطينية</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            direction: rtl; /* محاذاة النص من اليمين */
+            text-align: center; /* محاذاة النص في الوسط */
+        }
+        input, button {
+            padding: 10px;
+            margin: 5px 0;
+            width: 80%; /* عرض الحقول */
+        }
+        #result, #addResult, #updateResult {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        #patientList {
+            margin-top: 20px;
+            display: none; /* إخفاء القائمة افتراضيًا */
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        img {
+            max-width: 100%; /* يجعل الصورة تتناسب مع عرض الصفحة */
+            height: auto; /* يحافظ على نسبة الطول إلى العرض */
+        }
+    </style>
+</head>
+<body>
+    <h1>الإغاثة الطبية الفلسطينية</h1>
+    <img src="https://th.bing.com/th/id/OIP.UEp37dW9rpOgv5jB-v7n-QAAAA?rs=1&pid=ImgDetMain" alt="شعار الإغاثة الطبية الفلسطينية" />
+    
+    <h2>البحث عن مريض</h2>
+    <input type="text" id="patientName" placeholder="أدخل اسم المريض" />
+    <button onclick="searchPatient()">بحث</button>
+    <div id="result"></div>
+
+    <h2>إضافة مريض جديد</h2>
+    <input type="text" id="newPatientName" placeholder="اسم المريض الجديد" />
+    <input type="text" id="newFileNumber" placeholder="رقم الملف الجديد" />
+    <button onclick="addPatient()">إضافة</button>
+    <div id="addResult"></div>
+
+    <h2>تعديل اسم ورقم ملف مريض</h2>
+    <input type="text" id="updatePatientName" placeholder="اسم المريض القديم" />
+    <input type="text" id="newUpdatePatientName" placeholder="اسم المريض الجديد" />
+    <input type="text" id="updateFileNumber" placeholder="رقم الملف الجديد" />
+    <button onclick="updatePatientFile()">تعديل</button>
+    <div id="updateResult"></div>
+
+    <h2>قائمة المرضى</h2>
+    <div id="patientList">
+        <ul id="patientListItems"></ul>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, getDocs, collection, deleteDoc } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDCyi5sS8czsDUfmb_hnAQzvpZXrreskpU",
+            authDomain: "pmrs-ebe99.firebaseapp.com",
+            projectId: "pmrs-ebe99",
+            storageBucket: "pmrs-ebe99.firebasestorage.app",
+            messagingSenderId: "854379634453",
+            appId: "1:854379634453:web:4faf65fa2dbfea7f50d31c",
+            measurementId: "G-61580G4XLX"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.searchPatient = async function() {
+            const nameInput = document.getElementById("patientName").value;
+            const resultDiv = document.getElementById("result");
+
+            const docRef = doc(db, "patients", nameInput);
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                resultDiv.innerHTML = `نتيجة البحث: ${docSnap.id} - رقم الملف: ${docSnap.data().fileNumber}`;
+            } else {
+                resultDiv.innerHTML = "لم يتم العثور على المريض.";
+            }
+        };
+
+        window.addPatient = async function() {
+            const newPatientName = document.getElementById("newPatientName").value;
+            const newFileNumber = document.getElementById("newFileNumber").value;
+            const addResultDiv = document.getElementById("addResult");
+
+            if (newPatientName.trim() === "" || newFileNumber.trim() === "") {
+                addResultDiv.innerHTML = "يرجى إدخال اسم المريض ورقم الملف.";
+                return;
+            }
+
+            try {
+                await setDoc(doc(db, "patients", newPatientName), {
+                    fileNumber: newFileNumber
+                });
+                addResultDiv.innerHTML = `تم إضافة المريض: ${newPatientName} (رقم الملف: ${newFileNumber})`;
+                document.getElementById("newPatientName").value = ""; 
+                document.getElementById("newFileNumber").value = ""; 
+                updatePatientList(); 
+            } catch (error) {
+                addResultDiv.innerHTML = "خطأ: " + error.message;
+            }
+        };
+
+        window.updatePatientFile = async function() {
+            const oldPatientName = document.getElementById("updatePatientName").value;
+            const newPatientName = document.getElementById("newUpdatePatientName").value;
+            const updateFileNumber = document.getElementById("updateFileNumber").value;
+            const updateResultDiv = document.getElementById("updateResult");
+
+            if (oldPatientName.trim() === "" || newPatientName.trim() === "" || updateFileNumber.trim() === "") {
+                updateResultDiv.innerHTML = "يرجى إدخال اسم المريض القديم واسم المريض الجديد ورقم الملف الجديد.";
+                return;
+            }
+
+            const docRef = doc(db, "patients", oldPatientName);
+            try {
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    // تحديث رقم الملف للمريض القديم
+                    await updateDoc(docRef, {
+                        fileNumber: updateFileNumber
+                    });
+
+                    // إذا كان اسم المريض الجديد مختلفًا، قم بإنشاء سجل جديد
+                    if (newPatientName !== oldPatientName) {
+                        await setDoc(doc(db, "patients", newPatientName), {
+                            fileNumber: updateFileNumber
+                        });
+                        // حذف السجل القديم
+                        await deleteDoc(docRef);
+                    }
+
+                    updateResultDiv.innerHTML = `تم تعديل اسم ورقم الملف للمريض: ${newPatientName} (رقم الملف الجديد: ${updateFileNumber})`;
+                    document.getElementById("updatePatientName").value = ""; 
+                    document.getElementById("newUpdatePatientName").value = ""; 
+                    document.getElementById("updateFileNumber").value = ""; 
+                    updatePatientList(); 
+                } else {
+                    updateResultDiv.innerHTML = "لم يتم العثور على المريض القديم.";
+                }
+            } catch (error) {
+                updateResultDiv.innerHTML = "خطأ: " + error.message;
+            }
+        };
+
+        window.updatePatientList = async function() {
+            const patientListItems = document.getElementById("patientListItems");
+            patientListItems.innerHTML = ""; 
+
+            const querySnapshot = await getDocs(collection(db, "patients"));
+            querySnapshot.forEach((doc) => {
+                const listItem = document.createElement("li");
+                listItem.textContent = `${doc.id} - رقم الملف: ${doc.data().fileNumber}`;
+                patientListItems.appendChild(listItem);
+            });
+
+            const patientList = document.getElementById("patientList");
+            if (querySnapshot.size > 0) {
+                patientList.style.display = "block"; 
+            } else {
+                patientList.style.display = "none"; 
+            }
+        };
+
+        window.onload = updatePatientList;
+    </script>
+</body>
+</html>
