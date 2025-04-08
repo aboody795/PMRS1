@@ -76,41 +76,35 @@
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
+        let allPatients = []; // مصفوفة لتخزين جميع المرضى
+
+        // تحميل كافة المرضى عند تحميل الصفحة
+        async function loadAllPatients() {
+            const dbRef = ref(database);
+            const snapshot = await get(dbRef);
+            if (snapshot.exists()) {
+                snapshot.forEach(childSnapshot => {
+                    const patientData = childSnapshot.val();
+                    allPatients.push({
+                        name: patientData["الإسم الرباعي"],
+                        id: String(patientData["رقم الهوية"]), // تحويل إلى نص
+                        fileNumber: patientData["رقم الملف"]
+                    });
+                });
+            }
         }
 
-         window.searchPatient = function() {
+        window.searchPatient = function() {
             const nameInput = document.getElementById("patientName").value.trim();
             const resultDiv = document.getElementById("result");
             const foundPatients = allPatients.filter(patient => 
-                patient.name.includes(nameInput) || patient.id.includes(nameInput) // البحث في الذاكرة);
-            
-            try {
-                console.log("Trying to connect to the database...");
-                const snapshot = await get(dbRef); // تحميل جميع البيانات دفعة واحدة
-                
-                
-                if (foundPatients.length > 0) {
+                patient.name.includes(nameInput) || patient.id.includes(nameInput) // البحث في الذاكرة
+            );
+
+            if (foundPatients.length > 0) {
                 resultDiv.innerHTML = `نتيجة البحث: <br>${foundPatients.map(patient => `${patient.name} - رقم الملف: ${patient.fileNumber}`).join('<br>')}`;
             } else {
                 resultDiv.innerHTML = "لم يتم العثور على المريض.";
-
-                        // تحقق من وجود قيم قبل المقارنة
-                        if (patientName && (patientName.includes(nameInput) || patientId.includes(nameInput))) {
-                            results.push(`${patientName} - رقم الملف: ${childSnapshot.val()["رقم الملف"]}`);
-                        }
-                    });
-
-                    if (results.length > 0) {
-                        resultDiv.innerHTML = `نتائج البحث: <br>${results.join('<br>')}`; // عرض جميع النتائج
-                    } else {
-                        resultDiv.innerHTML = "لم يتم العثور على مريض.";
-                    }
-                } else {
-                    resultDiv.innerHTML = "لم يتم العثور على بيانات.";
-                }
-            } catch (error) {
-                console.error("Error connecting to the database:", error);
-                resultDiv.innerHTML = "خطأ في الاتصال بقاعدة البيانات.";
             }
         };
 
@@ -139,7 +133,7 @@
                 document.getElementById("newFileNumber").value = ""; 
                 document.getElementById("newArea").value = ""; 
                 document.getElementById("newIdNumber").value = ""; 
-                updatePatientList(); 
+                allPatients.push({ name: newPatientName, id: newIdNumber, fileNumber: newFileNumber }); // تحديث المصفوفة
             } catch (error) {
                 addResultDiv.innerHTML = "خطأ: " + error.message;
             }
@@ -169,7 +163,7 @@
                 document.getElementById("updatePatientName").value = ""; 
                 document.getElementById("newUpdatePatientName").value = ""; 
                 document.getElementById("updateFileNumber").value = ""; 
-                updatePatientList(); 
+                // تحديث المصفوفة هنا أيضًا إذا لزم الأمر
             } else {
                 updateResultDiv.innerHTML = "لم يتم العثور على المريض القديم.";
             }
@@ -193,7 +187,10 @@
             }
         };
 
-        window.onload = updatePatientList;
+        window.onload = async function() {
+            await loadAllPatients(); // تحميل جميع المرضى عند تحميل الصفحة
+            updatePatientList(); // تحديث قائمة المرضى
+        };
     </script>
 </body>
 </html>
