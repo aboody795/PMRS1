@@ -34,7 +34,7 @@
     <h1>الإغاثة الطبية الفلسطينية</h1>
     
     <h2>البحث عن مريض</h2>
-    <input type="text" id="searchInput" placeholder="أدخل اسم المريض الرباعي أو رقم الهوية" />
+    <input type="text" id="patientName" placeholder="أدخل اسم المريض الرباعي أو رقم الهوية" />
     <button onclick="searchPatient()">بحث</button>
     <div id="result"></div>
 
@@ -76,24 +76,19 @@
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
-        function normalizeString(str) {
-            return str.normalize('NFD').replace(/[\u0600-\u06FF]/g, ''); // إزالة الهمزات
-        }
-
         window.searchPatient = async function() {
-            const searchInput = document.getElementById("searchInput").value.trim();
+            const nameInput = document.getElementById("patientName").value.trim();
             const resultDiv = document.getElementById("result");
-            const normalizedSearch = normalizeString(searchInput);
             const dbRef = ref(database);
             let found = false;
 
             for (let i = 0; i <= 265; i++) {
                 const snapshot = await get(child(dbRef, i.toString()));
                 if (snapshot.exists()) {
-                    const patientName = normalizeString(snapshot.val()["الإسم الرباعي"]);
+                    const patientName = snapshot.val()["الإسم الرباعي"];
                     const patientId = snapshot.val()["رقم الهوية"];
-                    if (patientName.includes(normalizedSearch) || patientId.includes(normalizedSearch)) {
-                        resultDiv.innerHTML = `نتيجة البحث: ${snapshot.val()["الإسم الرباعي"]} - رقم الملف: ${snapshot.val()["رقم الملف"]}`;
+                    if (patientName === nameInput || patientId === nameInput) {
+                        resultDiv.innerHTML = `نتيجة البحث: ${patientName} - رقم الملف: ${snapshot.val()["رقم الملف"]}`;
                         found = true;
                         break;
                     }
@@ -175,7 +170,7 @@
                 const snapshot = await get(child(dbRef, i.toString())); // استخدم الرقم مباشرة
                 if (snapshot.exists()) {
                     const listItem = document.createElement("li");
-                    listItem.textContent = `${snapshot.val()["الإسم الرباعي"]} - رقم الملف: ${snapshot.val()["رقم الملف"]} - المنطقة: ${snapshot.val()["المنطقة"]} - رقم الهوية: ${snapshot.val()["رقم الهوية"]}`;
+                    listItem.textContent = `${snapshot.val()["الإسم الرباعي"]} - رقم الملف: ${snapshot.val()["رقم الملف"]}`;
                     patientListItems.appendChild(listItem);
                 }
             }
