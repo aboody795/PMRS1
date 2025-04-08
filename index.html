@@ -76,44 +76,35 @@
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
-        function normalizeString(str) {
-            if (str) {
-                return str.replace(/[\u0621\u0622\u0623\u0624\u0625\u0626\u0627\u0628\u0629\u0629\u062D\u062E\u062F\u0630\u0631\u0632\u0633\u0634\u063A\u0641\u0642\u0643\u0644\u0645\u0646\u0647\u0648\u064A]/g, ''); // إزالة الهمزات
+        let allPatients = []; // مصفوفة لتخزين جميع المرضى
+
+        // تحميل كافة المرضى عند تحميل الصفحة
+        async function loadAllPatients() {
+            const dbRef = ref(database);
+            const snapshot = await get(dbRef);
+            if (snapshot.exists()) {
+                snapshot.forEach(childSnapshot => {
+                    const patientData = childSnapshot.val();
+                    allPatients.push({
+                        name: patientData["الإسم الرباعي"],
+                        id: patientData["رقم الهوية"],
+                        fileNumber: patientData["رقم الملف"]
+                    });
+                });
             }
-            return ""; // إرجاع سلسلة فارغة إذا كانت القيمة غير موجودة
         }
 
-        window.searchPatient = async function() {
-            const nameInput = normalizeString(document.getElementById("patientName").value.trim());
+        window.searchPatient = function() {
+            const nameInput = document.getElementById("patientName").value.trim();
             const resultDiv = document.getElementById("result");
-            const dbRef = ref(database);
-            
-            try {
-                console.log("Trying to connect to the database...");
-                const snapshot = await get(dbRef); // تحميل جميع البيانات دفعة واحدة
-                if (snapshot.exists()) {
-                    const results = []; // لتخزين النتائج المتشابهة
-                    snapshot.forEach(childSnapshot => {
-                        const patientName = normalizeString(childSnapshot.val()["الإسم الرباعي"]);
-                        const patientId = String(childSnapshot.val()["رقم الهوية"]); // تحويل رقم الهوية إلى نص
+            const foundPatients = allPatients.filter(patient => 
+                patient.name.includes(nameInput) || patient.id.includes(nameInput)
+            );
 
-                        // تحقق من وجود قيم قبل المقارنة
-                        if (patientName && (patientName.includes(nameInput) || patientId.includes(nameInput))) {
-                            results.push(`${patientName} - رقم الملف: ${childSnapshot.val()["رقم الملف"]}`);
-                        }
-                    });
-
-                    if (results.length > 0) {
-                        resultDiv.innerHTML = `نتائج البحث: <br>${results.join('<br>')}`; // عرض جميع النتائج
-                    } else {
-                        resultDiv.innerHTML = "لم يتم العثور على مريض.";
-                    }
-                } else {
-                    resultDiv.innerHTML = "لم يتم العثور على بيانات.";
-                }
-            } catch (error) {
-                console.error("Error connecting to the database:", error);
-                resultDiv.innerHTML = "خطأ في الاتصال بقاعدة البيانات.";
+            if (foundPatients.length > 0) {
+                resultDiv.innerHTML = `نتيجة البحث: <br>${foundPatients.map(patient => `${patient.name} - رقم الملف: ${patient.fileNumber}`).join('<br>')}`;
+            } else {
+                resultDiv.innerHTML = "لم يتم العثور على المريض.";
             }
         };
 
@@ -142,7 +133,7 @@
                 document.getElementById("newFileNumber").value = ""; 
                 document.getElementById("newArea").value = ""; 
                 document.getElementById("newIdNumber").value = ""; 
-                updatePatientList(); 
+                allPatients.push({ name: newPatientName, id: newIdNumber, fileNumber: newFileNumber }); // تحديث المصفوفة
             } catch (error) {
                 addResultDiv.innerHTML = "خطأ: " + error.message;
             }
@@ -172,31 +163,15 @@
                 document.getElementById("updatePatientName").value = ""; 
                 document.getElementById("newUpdatePatientName").value = ""; 
                 document.getElementById("updateFileNumber").value = ""; 
-                updatePatientList(); 
+                // تحديث المصفوفة هنا أيضًا إذا لزم الأمر
             } else {
                 updateResultDiv.innerHTML = "لم يتم العثور على المريض القديم.";
             }
         };
 
-        window.updatePatientList = async function() {
-            const patientListItems = document.getElementById("patientListItems");
-            patientListItems.innerHTML = ""; 
-
-            const dbRef = ref(database);
-            const snapshot = await get(dbRef);
-            if (snapshot.exists()) {
-                snapshot.forEach(childSnapshot => {
-                    const listItem = document.createElement("li");
-                    listItem.textContent = `${childSnapshot.val()["الإسم الرباعي"]} - رقم الملف: ${childSnapshot.val()["رقم الملف"]} - رقم الهوية: ${childSnapshot.val()["رقم الهوية"]} - المنطقة: ${childSnapshot.val()["المنطقة"]}`;
-                    patientListItems.appendChild(listItem);
-                });
-                document.getElementById("patientList").style.display = "block"; 
-            } else {
-                document.getElementById("patientList").style.display = "none"; 
-            }
+        window.onload = async function() {
+            await loadAllPatients(); // تحميل جميع المرضى عند تحميل الصفحة
         };
-
-        window.onload = updatePatientList;
     </script>
 </body>
 </html>
