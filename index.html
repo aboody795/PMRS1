@@ -8,13 +8,13 @@
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
-            direction: rtl; /* محاذاة النص من اليمين */
-            text-align: center; /* محاذاة النص في الوسط */
+            direction: rtl;
+            text-align: center;
         }
         input, button {
             padding: 10px;
             margin: 5px 0;
-            width: 80%; /* عرض الحقول */
+            width: 80%;
         }
         #result, #addResult, #updateResult {
             margin-top: 20px;
@@ -22,7 +22,7 @@
         }
         #patientList {
             margin-top: 20px;
-            display: none; /* إخفاء القائمة افتراضيًا */
+            display: none;
         }
         ul {
             list-style-type: none;
@@ -76,9 +76,8 @@
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
-        let allPatients = []; // مصفوفة لتخزين جميع المرضى
+        let allPatients = [];
 
-        // تحميل كافة المرضى عند تحميل الصفحة
         async function loadAllPatients() {
             const dbRef = ref(database);
             const snapshot = await get(dbRef);
@@ -87,7 +86,7 @@
                     const patientData = childSnapshot.val();
                     allPatients.push({
                         name: patientData["الإسم الرباعي"],
-                        id: String(patientData["رقم الهوية"]), // تحويل إلى نص
+                        id: String(patientData["رقم الهوية"]),
                         fileNumber: patientData["رقم الملف"]
                     });
                 });
@@ -98,9 +97,9 @@
             const nameInput = document.getElementById("patientName").value.trim();
             const resultDiv = document.getElementById("result");
             const foundPatients = allPatients.filter(patient => {
-                const patientName = patient.name || ""; // التأكد من وجود القيمة
-                const patientId = patient.id || ""; // التأكد من وجود القيمة
-                return patientName.includes(nameInput) || patientId.includes(nameInput); // البحث في الذاكرة
+                const patientName = patient.name || "";
+                const patientId = patient.id || "";
+                return patientName.includes(nameInput) || patientId.includes(nameInput);
             });
 
             if (foundPatients.length > 0) {
@@ -111,19 +110,19 @@
         };
 
         window.addPatient = async function() {
-            const newPatientName = document.getElementById("newPatientName").value;
-            const newFileNumber = document.getElementById("newFileNumber").value;
-            const newArea = document.getElementById("newArea").value;
-            const newIdNumber = document.getElementById("newIdNumber").value;
+            const newPatientName = String(document.getElementById("newPatientName").value).trim();
+            const newFileNumber = String(document.getElementById("newFileNumber").value).trim();
+            const newArea = String(document.getElementById("newArea").value).trim();
+            const newIdNumber = String(document.getElementById("newIdNumber").value).trim();
             const addResultDiv = document.getElementById("addResult");
 
-            if (newPatientName.trim() === "" || newFileNumber.trim() === "" || newArea.trim() === "" || newIdNumber.trim() === "") {
+            if (newPatientName === "" || newFileNumber === "" || newArea === "" || newIdNumber === "") {
                 addResultDiv.innerHTML = "يرجى إدخال كافة المعلومات.";
                 return;
             }
 
             try {
-                const newPatientKey = Date.now(); // يمكنك استخدام طريقة أخرى لتحديد المفتاح
+                const newPatientKey = Date.now();
                 await set(ref(database, newPatientKey), {
                     "الإسم الرباعي": newPatientName,
                     "رقم الملف": newFileNumber,
@@ -135,19 +134,19 @@
                 document.getElementById("newFileNumber").value = ""; 
                 document.getElementById("newArea").value = ""; 
                 document.getElementById("newIdNumber").value = ""; 
-                allPatients.push({ name: newPatientName, id: newIdNumber, fileNumber: newFileNumber }); // تحديث المصفوفة
+                allPatients.push({ name: newPatientName, id: newIdNumber, fileNumber: newFileNumber });
             } catch (error) {
                 addResultDiv.innerHTML = "خطأ: " + error.message;
             }
         };
 
         window.updatePatientFile = async function() {
-            const oldPatientName = document.getElementById("updatePatientName").value;
-            const newPatientName = document.getElementById("newUpdatePatientName").value;
-            const updateFileNumber = document.getElementById("updateFileNumber").value;
+            const oldPatientName = String(document.getElementById("updatePatientName").value).trim();
+            const newPatientName = String(document.getElementById("newUpdatePatientName").value).trim();
+            const updateFileNumber = String(document.getElementById("updateFileNumber").value).trim();
             const updateResultDiv = document.getElementById("updateResult");
 
-            if (oldPatientName.trim() === "" || newPatientName.trim() === "" || updateFileNumber.trim() === "") {
+            if (oldPatientName === "" || newPatientName === "" || updateFileNumber === "") {
                 updateResultDiv.innerHTML = "يرجى إدخال اسم المريض القديم واسم المريض الجديد ورقم الملف الجديد.";
                 return;
             }
@@ -165,7 +164,6 @@
                 document.getElementById("updatePatientName").value = ""; 
                 document.getElementById("newUpdatePatientName").value = ""; 
                 document.getElementById("updateFileNumber").value = ""; 
-                // تحديث المصفوفة هنا أيضًا إذا لزم الأمر
             } else {
                 updateResultDiv.innerHTML = "لم يتم العثور على المريض القديم.";
             }
@@ -190,8 +188,8 @@
         };
 
         window.onload = async function() {
-            await loadAllPatients(); // تحميل جميع المرضى عند تحميل الصفحة
-            updatePatientList(); // تحديث قائمة المرضى
+            await loadAllPatients(); 
+            updatePatientList(); 
         };
     </script>
 </body>
