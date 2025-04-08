@@ -91,7 +91,7 @@
                 const snapshot = await get(child(dbRef, i.toString()));
                 if (snapshot.exists()) {
                     const patientName = normalizeString(snapshot.val()["الإسم الرباعي"]);
-                    const patientId = snapshot.val()["رقم الهوية"];
+                    const patientId = String(snapshot.val()["رقم الهوية"]); // تأكد من تحويل رقم الهوية إلى نص
                     // تحقق إذا كان الاسم يحتوي على النص المدخل أو إذا كان رقم الهوية يطابق
                     if (patientName.includes(nameInput) || patientId.includes(nameInput)) {
                         results.push(`${snapshot.val()["الإسم الرباعي"]} - رقم الملف: ${snapshot.val()["رقم الملف"]}`); // إضافة النتيجة إلى القائمة
