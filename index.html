@@ -97,9 +97,11 @@
         window.searchPatient = function() {
             const nameInput = document.getElementById("patientName").value.trim();
             const resultDiv = document.getElementById("result");
-            const foundPatients = allPatients.filter(patient => 
-                patient.name.includes(nameInput) || patient.id.includes(nameInput) // البحث في الذاكرة
-            );
+            const foundPatients = allPatients.filter(patient => {
+                const patientName = patient.name || ""; // التأكد من وجود القيمة
+                const patientId = patient.id || ""; // التأكد من وجود القيمة
+                return patientName.includes(nameInput) || patientId.includes(nameInput); // البحث في الذاكرة
+            });
 
             if (foundPatients.length > 0) {
                 resultDiv.innerHTML = `نتيجة البحث: <br>${foundPatients.map(patient => `${patient.name} - رقم الملف: ${patient.fileNumber}`).join('<br>')}`;
