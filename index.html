@@ -87,11 +87,10 @@
                     const patientData = childSnapshot.val();
                     allPatients.push({
                         name: patientData["الإسم الرباعي"],
-                        id: patientData["رقم الهوية"],
+                        id: String(patientData["رقم الهوية"]), // تحويل إلى نص
                         fileNumber: patientData["رقم الملف"]
                     });
                 });
-                console.log(allPatients); // طباعة بيانات المرضى المحملة
             }
         }
 
@@ -99,7 +98,7 @@
             const nameInput = document.getElementById("patientName").value.trim();
             const resultDiv = document.getElementById("result");
             const foundPatients = allPatients.filter(patient => 
-                patient.name.includes(nameInput) || (patient.id && String(patient.id).includes(nameInput)) // تحقق من وجود id
+                patient.name.includes(nameInput) || patient.id.includes(nameInput) // البحث في الذاكرة
             );
 
             if (foundPatients.length > 0) {
