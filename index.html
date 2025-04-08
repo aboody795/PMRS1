@@ -76,27 +76,34 @@
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
+        function normalizeString(str) {
+            return str.normalize('NFD').replace(/[\u0600-\u06FF]/g, ''); // إزالة الهمزات
+        }
+
         window.searchPatient = async function() {
-            const nameInput = document.getElementById("patientName").value.trim();
+            const nameInput = normalizeString(document.getElementById("patientName").value.trim());
             const resultDiv = document.getElementById("result");
             const dbRef = ref(database);
             let found = false;
+            let results = []; // لتخزين النتائج المتشابهة
 
             for (let i = 0; i <= 265; i++) {
                 const snapshot = await get(child(dbRef, i.toString()));
                 if (snapshot.exists()) {
-                    const patientName = snapshot.val()["الإسم الرباعي"];
+                    const patientName = normalizeString(snapshot.val()["الإسم الرباعي"]);
                     const patientId = snapshot.val()["رقم الهوية"];
-                    if (patientName === nameInput || patientId === nameInput) {
-                        resultDiv.innerHTML = `نتيجة البحث: ${patientName} - رقم الملف: ${snapshot.val()["رقم الملف"]}`;
+                    // تحقق إذا كان الاسم يحتوي على النص المدخل أو إذا كان رقم الهوية يطابق
+                    if (patientName.includes(nameInput) || patientId.includes(nameInput)) {
+                        results.push(`${snapshot.val()["الإسم الرباعي"]} - رقم الملف: ${snapshot.val()["رقم الملف"]}`); // إضافة النتيجة إلى القائمة
                         found = true;
-                        break;
                     }
                 }
             }
 
-            if (!found) {
-                resultDiv.innerHTML = "لم يتم العثور على المريض.";
+            if (found) {
+                resultDiv.innerHTML = `نتائج البحث: <br>${results.join('<br>')}`; // عرض جميع النتائج
+            } else {
+                resultDiv.innerHTML = "لم يتم العثور على مريض.";
             }
         };
 
@@ -167,10 +174,10 @@
 
             const dbRef = ref(database);
             for (let i = 0; i <= 265; i++) {
-                const snapshot = await get(child(dbRef, i.toString())); // استخدم الرقم مباشرة
+                const snapshot = await get(child(dbRef, i.toString()));
                 if (snapshot.exists()) {
                     const listItem = document.createElement("li");
-                    listItem.textContent = `${snapshot.val()["الإسم الرباعي"]} - رقم الملف: ${snapshot.val()["رقم الملف"]} - المنطقة: ${snapshot.val()["المنطقة"]} - رقم الهوية: ${snapshot.val()["رقم الهوية"]}`;
+                    listItem.textContent = `${snapshot.val()["الإسم الرباعي"]} - رقم الملف: ${snapshot.val()["رقم الملف"]} - رقم الهوية: ${snapshot.val()["رقم الهوية"]} - المنطقة: ${snapshot.val()["المنطقة"]}`;
                     patientListItems.appendChild(listItem);
                 }
             }
