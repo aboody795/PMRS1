@@ -91,6 +91,7 @@
                         fileNumber: patientData["رقم الملف"]
                     });
                 });
+                console.log(allPatients); // طباعة بيانات المرضى المحملة
             }
         }
 
@@ -98,7 +99,7 @@
             const nameInput = document.getElementById("patientName").value.trim();
             const resultDiv = document.getElementById("result");
             const foundPatients = allPatients.filter(patient => 
-                patient.name.includes(nameInput) || String(patient.id).includes(nameInput) // تحويل id إلى نص
+                patient.name.includes(nameInput) || (patient.id && String(patient.id).includes(nameInput)) // تحقق من وجود id
             );
 
             if (foundPatients.length > 0) {
