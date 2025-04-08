@@ -60,7 +60,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
-        import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-database.js";
+        import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDCyi5sS8czsDUfmb_hnAQzvpZXrreskpU",
@@ -86,6 +86,7 @@
             const dbRef = ref(database);
             
             try {
+                console.log("Trying to connect to the database...");
                 const snapshot = await get(dbRef); // تحميل جميع البيانات دفعة واحدة
                 if (snapshot.exists()) {
                     const results = []; // لتخزين النتائج المتشابهة
@@ -107,6 +108,7 @@
                     resultDiv.innerHTML = "لم يتم العثور على بيانات.";
                 }
             } catch (error) {
+                console.error("Error connecting to the database:", error);
                 resultDiv.innerHTML = "خطأ في الاتصال بقاعدة البيانات.";
             }
         };
