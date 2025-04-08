@@ -79,7 +79,7 @@
             const resultDiv = document.getElementById("result");
 
             const dbRef = ref(database);
-            const snapshot = await get(child(dbRef, 'patients/' + nameInput));
+            const snapshot = await get(child(dbRef, nameInput));
             if (snapshot.exists()) {
                 resultDiv.innerHTML = `نتيجة البحث: ${nameInput} - رقم الملف: ${snapshot.val().fileNumber}`;
             } else {
@@ -98,7 +98,7 @@
             }
 
             try {
-                await set(ref(database, 'patients/' + newPatientName), {
+                await set(ref(database, newPatientName), {
                     fileNumber: newFileNumber
                 });
                 addResultDiv.innerHTML = `تم إضافة المريض: ${newPatientName} (رقم الملف: ${newFileNumber})`;
@@ -122,13 +122,13 @@
             }
 
             const dbRef = ref(database);
-            const oldSnapshot = await get(child(dbRef, 'patients/' + oldPatientName));
+            const oldSnapshot = await get(child(dbRef, oldPatientName));
             if (oldSnapshot.exists()) {
-                await set(ref(database, 'patients/' + newPatientName), {
+                await set(ref(database, newPatientName), {
                     fileNumber: updateFileNumber
                 });
                 if (newPatientName !== oldPatientName) {
-                    await set(ref(database, 'patients/' + oldPatientName), null);
+                    await set(ref(database, oldPatientName), null);
                 }
                 updateResultDiv.innerHTML = `تم تعديل اسم ورقم الملف للمريض: ${newPatientName} (رقم الملف الجديد: ${updateFileNumber})`;
                 document.getElementById("updatePatientName").value = ""; 
@@ -145,13 +145,16 @@
             patientListItems.innerHTML = ""; 
 
             const dbRef = ref(database);
-            const snapshot = await get(child(dbRef, 'patients'));
-            if (snapshot.exists()) {
-                snapshot.forEach((childSnapshot) => {
+            for (let i = 1; i <= 265; i++) {
+                const snapshot = await get(child(dbRef, i.toString())); // استخدم الرقم مباشرة
+                if (snapshot.exists()) {
                     const listItem = document.createElement("li");
-                    listItem.textContent = `${childSnapshot.key} - رقم الملف: ${childSnapshot.val().fileNumber}`;
+                    listItem.textContent = `${i} - رقم الملف: ${snapshot.val().fileNumber}`;
                     patientListItems.appendChild(listItem);
-                });
+                }
+            }
+
+            if (patientListItems.children.length > 0) {
                 document.getElementById("patientList").style.display = "block"; 
             } else {
                 document.getElementById("patientList").style.display = "none"; 
