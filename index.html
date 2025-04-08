@@ -84,26 +84,30 @@
             const nameInput = normalizeString(document.getElementById("patientName").value.trim());
             const resultDiv = document.getElementById("result");
             const dbRef = ref(database);
-            let found = false;
-            let results = []; // لتخزين النتائج المتشابهة
-
-            for (let i = 0; i <= 265; i++) {
-                const snapshot = await get(child(dbRef, i.toString()));
+            
+            try {
+                const snapshot = await get(dbRef); // تحميل جميع البيانات دفعة واحدة
                 if (snapshot.exists()) {
-                    const patientName = normalizeString(snapshot.val()["الإسم الرباعي"]);
-                    const patientId = String(snapshot.val()["رقم الهوية"]); // تأكد من تحويل رقم الهوية إلى نص
-                    // تحقق إذا كان الاسم يحتوي على النص المدخل أو إذا كان رقم الهوية يطابق
-                    if (patientName.includes(nameInput) || patientId.includes(nameInput)) {
-                        results.push(`${snapshot.val()["الإسم الرباعي"]} - رقم الملف: ${snapshot.val()["رقم الملف"]}`); // إضافة النتيجة إلى القائمة
-                        found = true;
-                    }
-                }
-            }
+                    const results = []; // لتخزين النتائج المتشابهة
+                    snapshot.forEach(childSnapshot => {
+                        const patientName = normalizeString(childSnapshot.val()["الإسم الرباعي"]);
+                        const patientId = String(childSnapshot.val()["رقم الهوية"]); // تحويل رقم الهوية إلى نص
+                        // تحقق إذا كان الاسم يحتوي على النص المدخل أو إذا كان رقم الهوية يطابق
+                        if (patientName.includes(nameInput) || patientId.includes(nameInput)) {
+                            results.push(`${patientName} - رقم الملف: ${childSnapshot.val()["رقم الملف"]}`);
+                        }
+                    });
 
-            if (found) {
-                resultDiv.innerHTML = `نتائج البحث: <br>${results.join('<br>')}`; // عرض جميع النتائج
-            } else {
-                resultDiv.innerHTML = "لم يتم العثور على مريض.";
+                    if (results.length > 0) {
+                        resultDiv.innerHTML = `نتائج البحث: <br>${results.join('<br>')}`; // عرض جميع النتائج
+                    } else {
+                        resultDiv.innerHTML = "لم يتم العثور على مريض.";
+                    }
+                } else {
+                    resultDiv.innerHTML = "لم يتم العثور على بيانات.";
+                }
+            } catch (error) {
+                resultDiv.innerHTML = "خطأ في الاتصال بقاعدة البيانات.";
             }
         };
 
@@ -173,16 +177,13 @@
             patientListItems.innerHTML = ""; 
 
             const dbRef = ref(database);
-            for (let i = 0; i <= 265; i++) {
-                const snapshot = await get(child(dbRef, i.toString()));
-                if (snapshot.exists()) {
+            const snapshot = await get(dbRef);
+            if (snapshot.exists()) {
+                snapshot.forEach(childSnapshot => {
                     const listItem = document.createElement("li");
-                    listItem.textContent = `${snapshot.val()["الإسم الرباعي"]} - رقم الملف: ${snapshot.val()["رقم الملف"]} - رقم الهوية: ${snapshot.val()["رقم الهوية"]} - المنطقة: ${snapshot.val()["المنطقة"]}`;
+                    listItem.textContent = `${childSnapshot.val()["الإسم الرباعي"]} - رقم الملف: ${childSnapshot.val()["رقم الملف"]} - رقم الهوية: ${childSnapshot.val()["رقم الهوية"]} - المنطقة: ${childSnapshot.val()["المنطقة"]}`;
                     patientListItems.appendChild(listItem);
-                }
-            }
-
-            if (patientListItems.children.length > 0) {
+                });
                 document.getElementById("patientList").style.display = "block"; 
             } else {
                 document.getElementById("patientList").style.display = "none"; 
