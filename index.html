@@ -8,21 +8,21 @@
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
-            direction: rtl;
-            text-align: center;
+            direction: rtl; /* محاذاة النص من اليمين */
+            text-align: center; /* محاذاة النص في الوسط */
         }
         input, button {
             padding: 10px;
             margin: 5px 0;
-            width: 80%;
+            width: 80%; /* عرض الحقول */
         }
-        #result, #addResult {
+        #result, #addResult, #updateResult {
             margin-top: 20px;
             font-weight: bold;
         }
         #patientList {
             margin-top: 20px;
-            display: none;
+            display: none; /* إخفاء القائمة افتراضيًا */
         }
         ul {
             list-style-type: none;
@@ -32,12 +32,24 @@
 </head>
 <body>
     <h1>الإغاثة الطبية الفلسطينية</h1>
+    
+    <h2>البحث عن مريض</h2>
+    <input type="text" id="patientName" placeholder="أدخل اسم المريض" />
+    <button onclick="searchPatient()">بحث</button>
+    <div id="result"></div>
 
     <h2>إضافة مريض جديد</h2>
     <input type="text" id="newPatientName" placeholder="اسم المريض الجديد" />
     <input type="text" id="newFileNumber" placeholder="رقم الملف الجديد" />
     <button onclick="addPatient()">إضافة</button>
     <div id="addResult"></div>
+
+    <h2>تعديل اسم ورقم ملف مريض</h2>
+    <input type="text" id="updatePatientName" placeholder="اسم المريض القديم" />
+    <input type="text" id="newUpdatePatientName" placeholder="اسم المريض الجديد" />
+    <input type="text" id="updateFileNumber" placeholder="رقم الملف الجديد" />
+    <button onclick="updatePatientFile()">تعديل</button>
+    <div id="updateResult"></div>
 
     <h2>قائمة المرضى</h2>
     <div id="patientList">
@@ -62,6 +74,19 @@
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
+        window.searchPatient = async function() {
+            const nameInput = document.getElementById("patientName").value;
+            const resultDiv = document.getElementById("result");
+
+            const dbRef = ref(database);
+            const snapshot = await get(child(dbRef, 'patients/' + nameInput));
+            if (snapshot.exists()) {
+                resultDiv.innerHTML = `نتيجة البحث: ${nameInput} - رقم الملف: ${snapshot.val().fileNumber}`;
+            } else {
+                resultDiv.innerHTML = "لم يتم العثور على المريض.";
+            }
+        };
+
         window.addPatient = async function() {
             const newPatientName = document.getElementById("newPatientName").value;
             const newFileNumber = document.getElementById("newFileNumber").value;
@@ -82,6 +107,36 @@
                 updatePatientList(); 
             } catch (error) {
                 addResultDiv.innerHTML = "خطأ: " + error.message;
+            }
+        };
+
+        window.updatePatientFile = async function() {
+            const oldPatientName = document.getElementById("updatePatientName").value;
+            const newPatientName = document.getElementById("newUpdatePatientName").value;
+            const updateFileNumber = document.getElementById("updateFileNumber").value;
+            const updateResultDiv = document.getElementById("updateResult");
+
+            if (oldPatientName.trim() === "" || newPatientName.trim() === "" || updateFileNumber.trim() === "") {
+                updateResultDiv.innerHTML = "يرجى إدخال اسم المريض القديم واسم المريض الجديد ورقم الملف الجديد.";
+                return;
+            }
+
+            const dbRef = ref(database);
+            const oldSnapshot = await get(child(dbRef, 'patients/' + oldPatientName));
+            if (oldSnapshot.exists()) {
+                await set(ref(database, 'patients/' + newPatientName), {
+                    fileNumber: updateFileNumber
+                });
+                if (newPatientName !== oldPatientName) {
+                    await set(ref(database, 'patients/' + oldPatientName), null);
+                }
+                updateResultDiv.innerHTML = `تم تعديل اسم ورقم الملف للمريض: ${newPatientName} (رقم الملف الجديد: ${updateFileNumber})`;
+                document.getElementById("updatePatientName").value = ""; 
+                document.getElementById("newUpdatePatientName").value = ""; 
+                document.getElementById("updateFileNumber").value = ""; 
+                updatePatientList(); 
+            } else {
+                updateResultDiv.innerHTML = "لم يتم العثور على المريض القديم.";
             }
         };
 
