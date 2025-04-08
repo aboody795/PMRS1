@@ -98,7 +98,7 @@
             const nameInput = document.getElementById("patientName").value.trim();
             const resultDiv = document.getElementById("result");
             const foundPatients = allPatients.filter(patient => 
-                patient.name.includes(nameInput) || patient.id.includes(nameInput)
+                patient.name.includes(nameInput) || String(patient.id).includes(nameInput) // تحويل id إلى نص
             );
 
             if (foundPatients.length > 0) {
