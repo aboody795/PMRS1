@@ -170,7 +170,7 @@
                 const snapshot = await get(child(dbRef, i.toString())); // استخدم الرقم مباشرة
                 if (snapshot.exists()) {
                     const listItem = document.createElement("li");
-                    listItem.textContent = `${snapshot.val()["الإسم الرباعي"]} - رقم الملف: ${snapshot.val()["رقم الملف"]}`;
+                    listItem.textContent = `${snapshot.val()["الإسم الرباعي"]} - رقم الملف: ${snapshot.val()["رقم الملف"]} - المنطقة: ${snapshot.val()["المنطقة"]} - رقم الهوية: ${snapshot.val()["رقم الهوية"]}`;
                     patientListItems.appendChild(listItem);
                 }
             }
