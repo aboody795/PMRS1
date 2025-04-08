@@ -34,7 +34,7 @@
     <h1>الإغاثة الطبية الفلسطينية</h1>
     
     <h2>البحث عن مريض</h2>
-    <input type="text" id="patientName" placeholder="أدخل اسم المريض" />
+    <input type="text" id="patientName" placeholder="أدخل اسم المريض الرباعي" />
     <button onclick="searchPatient()">بحث</button>
     <div id="result"></div>
 
@@ -75,14 +75,21 @@
         const database = getDatabase(app);
 
         window.searchPatient = async function() {
-            const nameInput = document.getElementById("patientName").value;
+            const nameInput = document.getElementById("patientName").value.trim();
             const resultDiv = document.getElementById("result");
-
             const dbRef = ref(database);
-            const snapshot = await get(child(dbRef, nameInput));
-            if (snapshot.exists()) {
-                resultDiv.innerHTML = `نتيجة البحث: ${nameInput} - رقم الملف: ${snapshot.val().fileNumber}`;
-            } else {
+            let found = false;
+
+            for (let i = 1; i <= 265; i++) {
+                const snapshot = await get(child(dbRef, i.toString()));
+                if (snapshot.exists() && snapshot.val()["الإسم الرباعي"] === nameInput) {
+                    resultDiv.innerHTML = `نتيجة البحث: ${snapshot.val()["الإسم الرباعي"]} - رقم الملف: ${snapshot.val()["رقم الملف"]}`;
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) {
                 resultDiv.innerHTML = "لم يتم العثور على المريض.";
             }
         };
@@ -149,7 +156,7 @@
                 const snapshot = await get(child(dbRef, i.toString())); // استخدم الرقم مباشرة
                 if (snapshot.exists()) {
                     const listItem = document.createElement("li");
-                    listItem.textContent = `${i} - رقم الملف: ${snapshot.val().fileNumber}`;
+                    listItem.textContent = `${i} - رقم الملف: ${snapshot.val()["رقم الملف"]}`;
                     patientListItems.appendChild(listItem);
                 }
             }
