@@ -77,7 +77,10 @@
         const database = getDatabase(app);
 
         function normalizeString(str) {
-            return str.normalize('NFD').replace(/[\u0600-\u06FF]/g, ''); // إزالة الهمزات
+            if (str) {
+                return str.normalize('NFD').replace(/[\u0600-\u06FF]/g, ''); // إزالة الهمزات
+            }
+            return ""; // إرجاع سلسلة فارغة إذا كانت القيمة غير موجودة
         }
 
         window.searchPatient = async function() {
@@ -93,8 +96,9 @@
                     snapshot.forEach(childSnapshot => {
                         const patientName = normalizeString(childSnapshot.val()["الإسم الرباعي"]);
                         const patientId = String(childSnapshot.val()["رقم الهوية"]); // تحويل رقم الهوية إلى نص
-                        // تحقق إذا كان الاسم يحتوي على النص المدخل أو إذا كان رقم الهوية يطابق
-                        if (patientName.includes(nameInput) || patientId.includes(nameInput)) {
+
+                        // تحقق من وجود قيم قبل المقارنة
+                        if (patientName && (patientName.includes(nameInput) || patientId.includes(nameInput))) {
                             results.push(`${patientName} - رقم الملف: ${childSnapshot.val()["رقم الملف"]}`);
                         }
                     });
