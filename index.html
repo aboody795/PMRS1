@@ -41,6 +41,8 @@
     <h2>إضافة مريض جديد</h2>
     <input type="text" id="newPatientName" placeholder="اسم المريض الجديد" />
     <input type="text" id="newFileNumber" placeholder="رقم الملف الجديد" />
+    <input type="text" id="newArea" placeholder="المنطقة" />
+    <input type="text" id="newIdNumber" placeholder="رقم الهوية" />
     <button onclick="addPatient()">إضافة</button>
     <div id="addResult"></div>
 
@@ -80,7 +82,7 @@
             const dbRef = ref(database);
             let found = false;
 
-            for (let i = 1; i <= 265; i++) {
+            for (let i = 0; i <= 265; i++) {
                 const snapshot = await get(child(dbRef, i.toString()));
                 if (snapshot.exists() && snapshot.val()["الإسم الرباعي"] === nameInput) {
                     resultDiv.innerHTML = `نتيجة البحث: ${snapshot.val()["الإسم الرباعي"]} - رقم الملف: ${snapshot.val()["رقم الملف"]}`;
@@ -97,20 +99,28 @@
         window.addPatient = async function() {
             const newPatientName = document.getElementById("newPatientName").value;
             const newFileNumber = document.getElementById("newFileNumber").value;
+            const newArea = document.getElementById("newArea").value;
+            const newIdNumber = document.getElementById("newIdNumber").value;
             const addResultDiv = document.getElementById("addResult");
 
-            if (newPatientName.trim() === "" || newFileNumber.trim() === "") {
-                addResultDiv.innerHTML = "يرجى إدخال اسم المريض ورقم الملف.";
+            if (newPatientName.trim() === "" || newFileNumber.trim() === "" || newArea.trim() === "" || newIdNumber.trim() === "") {
+                addResultDiv.innerHTML = "يرجى إدخال كافة المعلومات.";
                 return;
             }
 
             try {
-                await set(ref(database, newPatientName), {
-                    fileNumber: newFileNumber
+                const newPatientKey = Date.now(); // يمكنك استخدام طريقة أخرى لتحديد المفتاح
+                await set(ref(database, newPatientKey), {
+                    "الإسم الرباعي": newPatientName,
+                    "رقم الملف": newFileNumber,
+                    "المنطقة": newArea,
+                    "رقم الهوية": newIdNumber
                 });
                 addResultDiv.innerHTML = `تم إضافة المريض: ${newPatientName} (رقم الملف: ${newFileNumber})`;
                 document.getElementById("newPatientName").value = ""; 
                 document.getElementById("newFileNumber").value = ""; 
+                document.getElementById("newArea").value = ""; 
+                document.getElementById("newIdNumber").value = ""; 
                 updatePatientList(); 
             } catch (error) {
                 addResultDiv.innerHTML = "خطأ: " + error.message;
@@ -132,7 +142,7 @@
             const oldSnapshot = await get(child(dbRef, oldPatientName));
             if (oldSnapshot.exists()) {
                 await set(ref(database, newPatientName), {
-                    fileNumber: updateFileNumber
+                    "رقم الملف": updateFileNumber
                 });
                 if (newPatientName !== oldPatientName) {
                     await set(ref(database, oldPatientName), null);
@@ -152,11 +162,11 @@
             patientListItems.innerHTML = ""; 
 
             const dbRef = ref(database);
-            for (let i = 1; i <= 265; i++) {
+            for (let i = 0; i <= 265; i++) {
                 const snapshot = await get(child(dbRef, i.toString())); // استخدم الرقم مباشرة
                 if (snapshot.exists()) {
                     const listItem = document.createElement("li");
-                    listItem.textContent = `${i} - رقم الملف: ${snapshot.val()["رقم الملف"]}`;
+                    listItem.textContent = `${snapshot.val()["الإسم الرباعي"]} - رقم الملف: ${snapshot.val()["رقم الملف"]} - المنطقة: ${snapshot.val()["المنطقة"]} - رقم الهوية: ${snapshot.val()["رقم الهوية"]}`;
                     patientListItems.appendChild(listItem);
                 }
             }
