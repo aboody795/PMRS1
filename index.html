@@ -16,6 +16,9 @@
             margin: 5px 0;
             width: 80%;
         }
+        button:hover {
+            background-color: #f0f0f0;
+        }
         #result, #addResult, #updateResult {
             margin-top: 20px;
             font-weight: bold;
@@ -34,23 +37,23 @@
     <h1>الإغاثة الطبية الفلسطينية</h1>
     
     <h2>البحث عن مريض</h2>
-    <input type="text" id="patientName" placeholder="أدخل اسم المريض الرباعي أو رقم الهوية" />
+    <input type="text" id="patientName" placeholder="أدخل اسم المريض الرباعي أو رقم الهوية" aria-label="اسم المريض أو رقم الهوية" />
     <button onclick="searchPatient()">بحث</button>
     <div id="result"></div>
 
     <h2>إضافة مريض جديد</h2>
-    <input type="text" id="newPatientName" placeholder="اسم المريض الجديد" />
-    <input type="text" id="newFileNumber" placeholder="رقم الملف الجديد" />
-    <input type="text" id="newArea" placeholder="المنطقة" />
-    <input type="text" id="newIdNumber" placeholder="رقم الهوية" />
-    <button onclick="addPatient()">إضافة</button>
+    <input type="text" id="newPatientName" placeholder="اسم المريض الرباعي" />
+    <input type="text" id="newPatientId" placeholder="رقم الهوية" />
+    <input type="text" id="newPatientAddress" placeholder="العنوان" />
+    <input type="text" id="newPatientFileNumber" placeholder="رقم الملف" />
+    <button onclick="addPatient()">إضافة مريض</button>
     <div id="addResult"></div>
 
-    <h2>تعديل اسم ورقم ملف مريض</h2>
-    <input type="text" id="updatePatientName" placeholder="اسم المريض القديم" />
-    <input type="text" id="newUpdatePatientName" placeholder="اسم المريض الجديد" />
+    <h2>تعديل مريض موجود</h2>
+    <input type="text" id="updatePatientId" placeholder="رقم هوية المريض" />
+    <input type="text" id="updatePatientName" placeholder="اسم المريض الجديد" />
     <input type="text" id="updateFileNumber" placeholder="رقم الملف الجديد" />
-    <button onclick="updatePatientFile()">تعديل</button>
+    <button onclick="updatePatient()">تعديل مريض</button>
     <div id="updateResult"></div>
 
     <h2>قائمة المرضى</h2>
@@ -75,21 +78,24 @@
 
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
-
         let allPatients = [];
 
         async function loadAllPatients() {
-            const dbRef = ref(database);
-            const snapshot = await get(dbRef);
-            if (snapshot.exists()) {
-                snapshot.forEach(childSnapshot => {
-                    const patientData = childSnapshot.val();
-                    allPatients.push({
-                        name: patientData["الإسم الرباعي"],
-                        id: String(patientData["رقم الهوية"]),
-                        fileNumber: patientData["رقم الملف"]
+            try {
+                const dbRef = ref(database);
+                const snapshot = await get(dbRef);
+                if (snapshot.exists()) {
+                    snapshot.forEach(childSnapshot => {
+                        const patientData = childSnapshot.val();
+                        allPatients.push({
+                            name: patientData["الإسم الرباعي"],
+                            id: String(patientData["رقم الهوية"]),
+                            fileNumber: patientData["رقم الملف"]
+                        });
                     });
-                });
+                }
+            } catch (error) {
+                console.error("Error loading patients: ", error);
             }
         }
 
@@ -110,87 +116,51 @@
         };
 
         window.addPatient = async function() {
-            const newPatientName = String(document.getElementById("newPatientName").value).trim();
-            const newFileNumber = String(document.getElementById("newFileNumber").value).trim();
-            const newArea = String(document.getElementById("newArea").value).trim();
-            const newIdNumber = String(document.getElementById("newIdNumber").value).trim();
-            const addResultDiv = document.getElementById("addResult");
+            const name = document.getElementById("newPatientName").value.trim();
+            const id = document.getElementById("newPatientId").value.trim();
+            const address = document.getElementById("newPatientAddress").value.trim();
+            const fileNumber = document.getElementById("newPatientFileNumber").value.trim();
+            const resultDiv = document.getElementById("addResult");
 
-            if (newPatientName === "" || newFileNumber === "" || newArea === "" || newIdNumber === "") {
-                addResultDiv.innerHTML = "يرجى إدخال كافة المعلومات.";
-                return;
-            }
-
-            try {
-                const newPatientKey = Date.now();
-                await set(ref(database, newPatientKey), {
-                    "الإسم الرباعي": newPatientName,
-                    "رقم الملف": newFileNumber,
-                    "المنطقة": newArea,
-                    "رقم الهوية": newIdNumber
+            if (name && id && address && fileNumber) {
+                const newPatientRef = ref(database, id); // Using ID as the unique key
+                await set(newPatientRef, {
+                    "الإسم الرباعي": name,
+                    "رقم الهوية": id,
+                    "العنوان": address,
+                    "رقم الملف": fileNumber
                 });
-                addResultDiv.innerHTML = `تم إضافة المريض: ${newPatientName} (رقم الملف: ${newFileNumber})`;
-                document.getElementById("newPatientName").value = ""; 
-                document.getElementById("newFileNumber").value = ""; 
-                document.getElementById("newArea").value = ""; 
-                document.getElementById("newIdNumber").value = ""; 
-                allPatients.push({ name: newPatientName, id: newIdNumber, fileNumber: newFileNumber });
-            } catch (error) {
-                addResultDiv.innerHTML = "خطأ: " + error.message;
-            }
-        };
-
-        window.updatePatientFile = async function() {
-            const oldPatientName = String(document.getElementById("updatePatientName").value).trim();
-            const newPatientName = String(document.getElementById("newUpdatePatientName").value).trim();
-            const updateFileNumber = String(document.getElementById("updateFileNumber").value).trim();
-            const updateResultDiv = document.getElementById("updateResult");
-
-            if (oldPatientName === "" || newPatientName === "" || updateFileNumber === "") {
-                updateResultDiv.innerHTML = "يرجى إدخال اسم المريض القديم واسم المريض الجديد ورقم الملف الجديد.";
-                return;
-            }
-
-            const dbRef = ref(database);
-            const oldSnapshot = await get(child(dbRef, oldPatientName));
-            if (oldSnapshot.exists()) {
-                await set(ref(database, newPatientName), {
-                    "رقم الملف": updateFileNumber
-                });
-                if (newPatientName !== oldPatientName) {
-                    await set(ref(database, oldPatientName), null);
-                }
-                updateResultDiv.innerHTML = `تم تعديل اسم ورقم الملف للمريض: ${newPatientName} (رقم الملف الجديد: ${updateFileNumber})`;
-                document.getElementById("updatePatientName").value = ""; 
-                document.getElementById("newUpdatePatientName").value = ""; 
-                document.getElementById("updateFileNumber").value = ""; 
+                resultDiv.innerHTML = "تم إضافة المريض بنجاح.";
+                loadAllPatients(); // Reload patients to include the new one
             } else {
-                updateResultDiv.innerHTML = "لم يتم العثور على المريض القديم.";
+                resultDiv.innerHTML = "يرجى ملء جميع الحقول.";
             }
         };
 
-        window.updatePatientList = async function() {
-            const patientListItems = document.getElementById("patientListItems");
-            patientListItems.innerHTML = ""; 
+        window.updatePatient = async function() {
+            const id = document.getElementById("updatePatientId").value.trim();
+            const newName = document.getElementById("updatePatientName").value.trim();
+            const newFileNumber = document.getElementById("updateFileNumber").value.trim();
+            const resultDiv = document.getElementById("updateResult");
 
-            const dbRef = ref(database);
-            const snapshot = await get(dbRef);
-            if (snapshot.exists()) {
-                snapshot.forEach(childSnapshot => {
-                    const listItem = document.createElement("li");
-                    listItem.textContent = `${childSnapshot.val()["الإسم الرباعي"]} - رقم الملف: ${childSnapshot.val()["رقم الملف"]} - رقم الهوية: ${childSnapshot.val()["رقم الهوية"]} - المنطقة: ${childSnapshot.val()["المنطقة"]}`;
-                    patientListItems.appendChild(listItem);
-                });
-                document.getElementById("patientList").style.display = "block"; 
+            const patientRef = ref(database, id);
+            const patientSnapshot = await get(patientRef);
+
+            if (patientSnapshot.exists()) {
+                const updates = {};
+                if (newName) updates["الإسم الرباعي"] = newName;
+                if (newFileNumber) updates["رقم الملف"] = newFileNumber;
+
+                await set(patientRef, updates);
+                resultDiv.innerHTML = "تم تعديل معلومات المريض بنجاح.";
+                loadAllPatients(); // Reload patients to include updates
             } else {
-                document.getElementById("patientList").style.display = "none"; 
+                resultDiv.innerHTML = "لم يتم العثور على المريض.";
             }
         };
 
-        window.onload = async function() {
-            await loadAllPatients(); 
-            updatePatientList(); 
-        };
+        // Load patients when the script is loaded
+        loadAllPatients();
     </script>
 </body>
 </html>
