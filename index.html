@@ -50,10 +50,13 @@
     <div id="addResult"></div>
 
     <h2>تعديل مريض موجود</h2>
-    <input type="text" id="updatePatientId" placeholder="رقم هوية المريض" />
-    <input type="text" id="updatePatientName" placeholder="اسم المريض الجديد" />
-    <input type="text" id="updateFileNumber" placeholder="رقم الملف الجديد" />
-    <button onclick="updatePatient()">تعديل مريض</button>
+    <input type="text" id="updateSearch" placeholder="ابحث برقم الهوية أو اسم المريض" />
+    <button onclick="findPatientToUpdate()">بحث</button>
+    <div id="updatePatientInfo" style="display:none;">
+        <input type="text" id="updatePatientName" placeholder="اسم المريض الجديد" />
+        <input type="text" id="updateFileNumber" placeholder="رقم الملف الجديد" />
+        <button onclick="updatePatient()">تعديل مريض</button>
+    </div>
     <div id="updateResult"></div>
 
     <h2>قائمة المرضى</h2>
@@ -137,25 +140,38 @@
             }
         };
 
+        window.findPatientToUpdate = function() {
+            const searchInput = document.getElementById("updateSearch").value.trim();
+            const foundPatient = allPatients.find(patient => patient.id === searchInput || patient.name.includes(searchInput));
+
+            if (foundPatient) {
+                document.getElementById("updatePatientName").value = foundPatient.name;
+                document.getElementById("updateFileNumber").value = foundPatient.fileNumber;
+                document.getElementById("updatePatientInfo").style.display = "block";
+                document.getElementById("updateResult").innerHTML = "";
+            } else {
+                document.getElementById("updateResult").innerHTML = "لم يتم العثور على المريض.";
+                document.getElementById("updatePatientInfo").style.display = "none";
+            }
+        };
+
         window.updatePatient = async function() {
-            const id = document.getElementById("updatePatientId").value.trim();
+            const searchInput = document.getElementById("updateSearch").value.trim();
             const newName = document.getElementById("updatePatientName").value.trim();
             const newFileNumber = document.getElementById("updateFileNumber").value.trim();
-            const resultDiv = document.getElementById("updateResult");
+            const foundPatient = allPatients.find(patient => patient.id === searchInput || patient.name.includes(searchInput));
 
-            const patientRef = ref(database, id);
-            const patientSnapshot = await get(patientRef);
-
-            if (patientSnapshot.exists()) {
+            if (foundPatient) {
+                const patientRef = ref(database, foundPatient.id);
                 const updates = {};
                 if (newName) updates["الإسم الرباعي"] = newName;
                 if (newFileNumber) updates["رقم الملف"] = newFileNumber;
 
                 await set(patientRef, updates);
-                resultDiv.innerHTML = "تم تعديل معلومات المريض بنجاح.";
+                document.getElementById("updateResult").innerHTML = "تم تعديل معلومات المريض بنجاح.";
                 loadAllPatients(); // Reload patients to include updates
             } else {
-                resultDiv.innerHTML = "لم يتم العثور على المريض.";
+                document.getElementById("updateResult").innerHTML = "لم يتم العثور على المريض.";
             }
         };
 
